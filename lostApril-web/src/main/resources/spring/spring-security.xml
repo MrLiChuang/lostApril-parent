@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                                        http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd">
+
+    <!-- 用于获取数据库中用户信息bean -->
+    <bean id="userLoginAuthInfo" class="com.lostApril.authentication.loginHandler.UserLoginAuthInfo"/>
+    <!-- 自定义用户信息认证bean -->
+    <bean id="userLoginAuthentication" class="com.lostApril.authentication.loginHandler.UserLoginAuthentication">
+        <constructor-arg name="userDetailsService" ref="userLoginAuthInfo"/>
+    </bean>
+    <!-- 自定义认证失败处理bean -->
+    <bean id="loginAuthenticationFailureHandler" class="com.lostApril.authentication.loginHandler.LoginAuthenticationFailureHandler"/>
+    <!-- 自定义认证成功处理bean -->
+    <bean id="loginAuthenticationSuccessHandler" class="com.lostApril.authentication.loginHandler.LoginAuthenticationSuccessHandler"/>
+
+    <bean id="jdbcTokenRepository" class="org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl">
+        <property name="dataSource" ref="dataSource"/>
+        <!--启动的时候 security会自动建立一张关于remember的数据表-->
+    </bean>
+    <security:http >
+        <security:intercept-url pattern="/favicon.ico" access="permitAll()"/>
+        <security:intercept-url pattern="/lostApril/main" access="permitAll()"/>
+        <security:intercept-url pattern="/login/*" access="permitAll()"/>
+        <security:intercept-url pattern="/register/**" access="permitAll()"/>
+        <security:intercept-url pattern="/lostApril/admin" access="hasRole('ROLE_admin')"/>
+        <security:intercept-url pattern="/lostApril/user" access="hasRole('ROLE_user')"/>
+        <security:intercept-url pattern="/static/**" access="permitAll()"/>
+
+        <security:form-login login-page="/login"
+                             login-processing-url="/login/doLogin"
+                             authentication-failure-handler-ref="loginAuthenticationFailureHandler"
+                             authentication-success-handler-ref="loginAuthenticationSuccessHandler"/>
+
+        <security:logout />
+        <security:access-denied-handler error-page="/lostApril/error"/>
+        <security:csrf disabled="true"/>
+
+        <!--remember-me功能 token-validity-seconds时间  單位秒-->
+        <security:remember-me token-repository-ref="jdbcTokenRepository" remember-me-parameter="remember-me" token-validity-seconds="3600"/>
+    </security:http>
+
+    <security:authentication-manager>
+        <security:authentication-provider ref="userLoginAuthentication"/>
+        <!--<security:authentication-provider user-service-ref="userLoginAuthInfo"/>-->
+    </security:authentication-manager>
+
+</beans>
